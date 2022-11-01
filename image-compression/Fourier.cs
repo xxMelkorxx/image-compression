@@ -4,47 +4,48 @@ using System.Numerics;
 namespace image_compression
 {
     /// <summary>
-    /// Быстрое преобразование Фурье.
+    /// Преобразование Фурье.
     /// </summary>
-    public static class FFT
+    public static class Fourier
     {
         public const double DoublePi = 2 * Math.PI;
 
         /// <summary>
-        /// Децимация по частоте.
+        /// Быстрое преобразование фурье.
         /// </summary>
         /// <param name="frame">Массив комлексных чисел.</param>
         /// <param name="direct">Прямой ход?</param>
         /// <returns></returns>
-        public static Complex[] DecimationInFrequency(Complex[] frame, bool direct)
+        public static Complex[] FFT(Complex[] frame, bool direct)
         {
             if (frame.Length == 1) return frame;
-            var halfSampleSize = frame.Length >> 1;
-            var fullSampleSize = frame.Length;
+            var halfSize = frame.Length >> 1;
+            var fullSize = frame.Length;
 
-            var arg = direct ? -DoublePi / fullSampleSize : DoublePi / fullSampleSize;
-            var omegaPowBase = new Complex(Math.Cos(arg), Math.Sin(arg));
+            var arg = direct ? -DoublePi / fullSize : DoublePi / fullSize;
+            var omegaPowBase = Complex.Exp(arg);
+            // var omegaPowBase = new Complex(Math.Cos(arg), Math.Sin(arg));
             var omega = Complex.One;
-            var result = new Complex[fullSampleSize];
+            var result = new Complex[fullSize];
 
-            for (var j = 0; j < halfSampleSize; j++)
+            for (var j = 0; j < halfSize; j++)
             {
-                result[j] = frame[j] + frame[j + halfSampleSize];
-                result[j + halfSampleSize] = omega * (frame[j] - frame[j + halfSampleSize]);
+                result[j] = frame[j] + frame[j + halfSize];
+                result[j + halfSize] = omega * (frame[j] - frame[j + halfSize]);
                 omega *= omegaPowBase;
             }
 
-            var yTop = new Complex[halfSampleSize];
-            var yBottom = new Complex[halfSampleSize];
-            for (var i = 0; i < halfSampleSize; i++)
+            var yTop = new Complex[halfSize];
+            var yBottom = new Complex[halfSize];
+            for (var i = 0; i < halfSize; i++)
             {
                 yTop[i] = result[i];
-                yBottom[i] = result[i + halfSampleSize];
+                yBottom[i] = result[i + halfSize];
             }
 
-            yTop = DecimationInFrequency(yTop, direct);
-            yBottom = DecimationInFrequency(yBottom, direct);
-            for (var i = 0; i < halfSampleSize; i++)
+            yTop = FFT(yTop, direct);
+            yBottom = FFT(yBottom, direct);
+            for (var i = 0; i < halfSize; i++)
             {
                 var j = i << 1; // i = 2*j;
                 result[j] = yTop[i];
@@ -54,20 +55,26 @@ namespace image_compression
             return result;
         }
 
+        /// <summary>
+        /// Двумерное быстрое преобразованеи Фурье.
+        /// </summary>
+        /// <param name="matrix">Исходная матрица.</param>
+        /// <param name="direct">Прямой ход?</param>
+        /// <returns></returns>
         public static ComplexMatrix FFT_2D(ComplexMatrix matrix, bool direct)
         {
             var width = matrix.Width;
             var height = matrix.Height;
             var result = new ComplexMatrix(width, height);
             
-            if (!direct) matrix = AngularTransform(matrix);
+            //if (!direct) matrix = AngularTransform(matrix);
             for (var i = 0; i < width; i++)
-                result.Matrix[i] = DecimationInFrequency(matrix.Matrix[i], direct);
+                result.Matrix[i] = FFT(matrix.Matrix[i], direct);
             result = Transform(result);
             for (var i = 0; i < height; i++)
-                result.Matrix[i] = DecimationInFrequency(result.Matrix[i], direct);
+                result.Matrix[i] = FFT(result.Matrix[i], direct);
             result = Transform(result);
-            if (direct) result = AngularTransform(result);
+            //if (direct) result = AngularTransform(result);
 
             if (!direct)
                 for (var i = 0; i < width; i++)

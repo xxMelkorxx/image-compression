@@ -47,7 +47,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FFT.cs" />
+    <Compile Include="ComplexMatrix.cs" />
+    <Compile Include="Fourier.cs" />
     <Compile Include="ImageCompression.cs" />
     <Compile Include="ImageForm.cs">
       <SubType>Form</SubType>

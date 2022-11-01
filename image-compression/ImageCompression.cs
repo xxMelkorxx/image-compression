@@ -1,7 +1,4 @@
 using System;
-using System.Numerics;
-using System.Collections.Generic;
-using System.Linq;
 using System.Drawing;
 
 namespace image_compression
@@ -9,6 +6,18 @@ namespace image_compression
     public class ImageCompression
     {
         private const int SizeSubmatrix = 8;
+
+        private int[,] _qMatrix =
+        {
+            { 16, 11, 10, 16, 24, 40, 51, 61 },
+            { 12, 12, 14, 19, 26, 58, 60, 55 },
+            { 14, 13, 16, 24, 40, 57, 69, 56 },
+            { 14, 17, 22, 29, 51, 87, 80, 62 },
+            { 18, 22, 37, 56, 68, 109, 103, 77 },
+            { 24, 35, 55, 64, 81, 104, 113, 92 },
+            { 49, 64, 78, 87, 103, 121, 120, 101 },
+            { 72, 92, 95, 98, 112, 100, 103, 99 }
+        };
 
         private ComplexMatrix[,] _submatrices;
         private int N => _submatrices.GetLength(0);
@@ -24,6 +33,7 @@ namespace image_compression
             InitMatrix = new ComplexMatrix(bitmap);
             SplittingIntoSubmatrices();
             FourierTransformOfSubmatrices();
+            FilteringSubmatrices();
         }
 
         /// <summary>
@@ -51,9 +61,25 @@ namespace image_compression
         {
             for (var n = 0; n < N; n++)
             for (var m = 0; m < M; m++)
-                _submatrices[n, m] = FFT.FFT_2D(_submatrices[n, m], true);
+                _submatrices[n, m] = Fourier.FFT_2D(_submatrices[n, m], true);
         }
 
+        /// <summary>
+        /// Применение фильтра высоких частот для каждой подматрицы.
+        /// </summary>
+        private void FilteringSubmatrices()
+        {
+            for (var n = 0; n < N; n++)
+            for (var m = 0; m < M; m++)
+            {
+                for (var i = 0; i < SizeSubmatrix; i++)
+                for (var j = 0; j < SizeSubmatrix; j++)
+                {
+                    _submatrices[n, m].Matrix[i][j] = Math.Round(_submatrices[n, m].Matrix[i][j].Real / _qMatrix[i, j]);
+                }
+            }
+        }
+        
         /// <summary>
         /// Конвертация изображения в полутоновое.
         /// </summary>
@@ -75,41 +101,6 @@ namespace image_compression
             }
 
             return newBitmap;
-        }
-    }
-
-    public struct ComplexMatrix
-    {
-        public int Width => Matrix.Length;
-        public int Height => Matrix[0].Length;
-
-        public Complex[][] Matrix;
-
-        /// <summary>
-        /// Конструктор. Инициализирует MatrixImage с указанным размером.
-        /// </summary>
-        /// <param name="width">Ширина</param>
-        /// <param name="height">Спектр</param>
-        public ComplexMatrix(int width, int height)
-        {
-            Matrix = new Complex[width][];
-            for (var i = 0; i < width; i++)
-                Matrix[i] = new Complex[height];
-        }
-
-        /// <summary>
-        /// Конструктор. Создаёт из bitmap.
-        /// </summary>
-        /// <param name="bitmap"></param>
-        public ComplexMatrix(Bitmap bitmap)
-        {
-            Matrix = new Complex[bitmap.Width][];
-            for (var i = 0; i < Width; i++)
-            {
-                Matrix[i] = new Complex[bitmap.Height];
-                for (var j = 0; j < Height; j++)
-                    Matrix[i][j] = bitmap.GetPixel(i, j).R;
-            }
         }
     }
 }

@@ -25,12 +25,12 @@ namespace image_compression
             var arg = direct ? -DoublePi / fullSampleSize : DoublePi / fullSampleSize;
             var omegaPowBase = new Complex(Math.Cos(arg), Math.Sin(arg));
             var omega = Complex.One;
-            var spectrum = new Complex[fullSampleSize];
+            var result = new Complex[fullSampleSize];
 
             for (var j = 0; j < halfSampleSize; j++)
             {
-                spectrum[j] = frame[j] + frame[j + halfSampleSize];
-                spectrum[j + halfSampleSize] = omega * (frame[j] - frame[j + halfSampleSize]);
+                result[j] = frame[j] + frame[j + halfSampleSize];
+                result[j + halfSampleSize] = omega * (frame[j] - frame[j + halfSampleSize]);
                 omega *= omegaPowBase;
             }
 
@@ -38,8 +38,8 @@ namespace image_compression
             var yBottom = new Complex[halfSampleSize];
             for (var i = 0; i < halfSampleSize; i++)
             {
-                yTop[i] = spectrum[i];
-                yBottom[i] = spectrum[i + halfSampleSize];
+                yTop[i] = result[i];
+                yBottom[i] = result[i + halfSampleSize];
             }
 
             yTop = DecimationInFrequency(yTop, direct);
@@ -47,46 +47,46 @@ namespace image_compression
             for (var i = 0; i < halfSampleSize; i++)
             {
                 var j = i << 1; // i = 2*j;
-                spectrum[j] = yTop[i];
-                spectrum[j + 1] = yBottom[i];
+                result[j] = yTop[i];
+                result[j + 1] = yBottom[i];
             }
 
-            return spectrum;
+            return result;
         }
 
-        public static ComplexMatrix FFT_2D(ComplexMatrix frame, bool direct)
+        public static ComplexMatrix FFT_2D(ComplexMatrix matrix, bool direct)
         {
-            var width = frame.Width;
-            var height = frame.Height;
-            var spectrum = new ComplexMatrix(width, height, !frame.IsSpectrum);
+            var width = matrix.Width;
+            var height = matrix.Height;
+            var result = new ComplexMatrix(width, height);
             
-            if (!direct) frame = AngularTransform(frame);
+            if (!direct) matrix = AngularTransform(matrix);
             for (var i = 0; i < width; i++)
-                spectrum.Matrix[i] = DecimationInFrequency(frame.Matrix[i], direct);
-            spectrum = Transform(spectrum);
+                result.Matrix[i] = DecimationInFrequency(matrix.Matrix[i], direct);
+            result = Transform(result);
             for (var i = 0; i < height; i++)
-                spectrum.Matrix[i] = DecimationInFrequency(spectrum.Matrix[i], direct);
-            spectrum = Transform(spectrum);
-            if (direct) spectrum = AngularTransform(spectrum);
+                result.Matrix[i] = DecimationInFrequency(result.Matrix[i], direct);
+            result = Transform(result);
+            if (direct) result = AngularTransform(result);
 
             if (!direct)
                 for (var i = 0; i < width; i++)
                 for (var j = 0; j < height; j++)
-                    spectrum.Matrix[i][j] /= width * height;
+                    result.Matrix[i][j] /= width * height;
 
-            return spectrum;
+            return result;
         }
 
         /// <summary>
         /// Транспонирование матрицы.
         /// </summary>
         /// <param name="init">Исходная матрица</param>
-        /// <returns>Трансвонированная матрица</returns>
+        /// <returns>Транспонированная матрица</returns>
         public static ComplexMatrix Transform(ComplexMatrix init)
         {
             var width = init.Width;
             var height = init.Height;
-            var result = new ComplexMatrix(height, width, init.IsSpectrum);
+            var result = new ComplexMatrix(height, width);
             
             for (var i = 0; i < height; i++)
             for (var j = 0; j < width; j++)
@@ -104,7 +104,7 @@ namespace image_compression
             var height = spectrum.Height;
             var halfWidth = width >> 1;
             var halfHeight = height >> 1;
-            var result = new ComplexMatrix(width, height, spectrum.IsSpectrum);
+            var result = new ComplexMatrix(width, height);
 
             for (var i = 0; i < halfWidth; i++)
             for (var j = 0; j < halfHeight; j++)

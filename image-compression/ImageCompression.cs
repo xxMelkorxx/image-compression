@@ -8,13 +8,52 @@ namespace image_compression
 {
     public class ImageCompression
     {
-        private ComplexMatrix _initMatrix;
-        
+        private const int SizeSubmatrix = 8;
+
+        private ComplexMatrix[,] _submatrices;
+        private int N => _submatrices.GetLength(0);
+        private int M => _submatrices.GetLength(1);
+
+        public int Width => InitMatrix.Width;
+        public int Height => InitMatrix.Height;
+
+        public ComplexMatrix InitMatrix;
+
         public ImageCompression(Bitmap bitmap)
         {
-            _initMatrix = new ComplexMatrix(bitmap);
+            InitMatrix = new ComplexMatrix(bitmap);
+            SplittingIntoSubmatrices();
+            FourierTransformOfSubmatrices();
         }
-        
+
+        /// <summary>
+        /// Разбивает основную матрицу на подматрицы размером <see cref="SizeSubmatrix"/>.
+        /// </summary>
+        private void SplittingIntoSubmatrices()
+        {
+            _submatrices = new ComplexMatrix[Width / SizeSubmatrix, Height / SizeSubmatrix];
+            for (var n = 0; n < N; n++)
+            for (var m = 0; m < M; m++)
+            {
+                _submatrices[n, m] = new ComplexMatrix(SizeSubmatrix, SizeSubmatrix);
+                var ni = n * SizeSubmatrix;
+                var mj = m * SizeSubmatrix;
+                for (var i = 0; i < SizeSubmatrix; i++)
+                for (var j = 0; j < SizeSubmatrix; j++)
+                    _submatrices[n, m].Matrix[i][j] = InitMatrix.Matrix[ni + i][mj + j];
+            }
+        }
+
+        /// <summary>
+        /// Преобразование фурье для каждой субматрицы.
+        /// </summary>
+        private void FourierTransformOfSubmatrices()
+        {
+            for (var n = 0; n < N; n++)
+            for (var m = 0; m < M; m++)
+                _submatrices[n, m] = FFT.FFT_2D(_submatrices[n, m], true);
+        }
+
         /// <summary>
         /// Конвертация изображения в полутоновое.
         /// </summary>
@@ -22,7 +61,10 @@ namespace image_compression
         /// <returns></returns>
         public static Bitmap ConvertToHalftone(Bitmap bitmap)
         {
-            var newBitmap = new Bitmap(bitmap.Width, bitmap.Height);
+            var width = bitmap.Width - bitmap.Width % SizeSubmatrix;
+            var height = bitmap.Height - bitmap.Height % SizeSubmatrix;
+
+            var newBitmap = new Bitmap(width, height);
 
             for (var i = 0; i < bitmap.Width; i++)
             for (var j = 0; j < bitmap.Height; j++)
@@ -34,7 +76,6 @@ namespace image_compression
 
             return newBitmap;
         }
-        
     }
 
     public struct ComplexMatrix
@@ -43,17 +84,14 @@ namespace image_compression
         public int Height => Matrix[0].Length;
 
         public Complex[][] Matrix;
-        public bool IsSpectrum;
 
         /// <summary>
         /// Конструктор. Инициализирует MatrixImage с указанным размером.
         /// </summary>
         /// <param name="width">Ширина</param>
         /// <param name="height">Спектр</param>
-        /// <param name="isSpectrum">Является спектром?</param>
-        public ComplexMatrix(int width, int height, bool isSpectrum = false)
+        public ComplexMatrix(int width, int height)
         {
-            IsSpectrum = isSpectrum;
             Matrix = new Complex[width][];
             for (var i = 0; i < width; i++)
                 Matrix[i] = new Complex[height];
@@ -63,80 +101,14 @@ namespace image_compression
         /// Конструктор. Создаёт из bitmap.
         /// </summary>
         /// <param name="bitmap"></param>
-        /// <param name="isSpectrum"></param>
-        public ComplexMatrix(Bitmap bitmap, bool isSpectrum = false)
+        public ComplexMatrix(Bitmap bitmap)
         {
-            IsSpectrum = isSpectrum;
             Matrix = new Complex[bitmap.Width][];
             for (var i = 0; i < Width; i++)
             {
                 Matrix[i] = new Complex[bitmap.Height];
                 for (var j = 0; j < Height; j++)
                     Matrix[i][j] = bitmap.GetPixel(i, j).R;
-            }
-        }
-
-        /// <summary>
-        /// Матрица в виде формате Bitmap. 
-        /// </summary>
-        public Bitmap Bitmap
-        {
-            get
-            {
-                var bmp = new Bitmap(Width, Height);
-                var matRgb = MatrixRgb;
-
-                for (var i = 0; i < Width; i++)
-                for (var j = 0; j < Height; j++)
-                    bmp.SetPixel(i, j, Color.FromArgb(matRgb[i][j], matRgb[i][j], matRgb[i][j]));
-
-                return bmp;
-            }
-        }
-
-        /// <summary>
-        /// Отнормализованная матрица со значенияими в пределах от 0 до 255.  
-        /// </summary>
-        public byte[][] MatrixRgb
-        {
-            get
-            {
-                double max = 0;
-                for (var i = 0; i < Width; i++)
-                    if (Matrix[i].Max(j => j.Magnitude) > max)
-                        max = Matrix[i].Max(j => j.Magnitude);
-
-                var normMatrix = new double[Width][];
-                var matrixRgb = new byte[Width][];
-                for (var i = 0; i < Width; i++)
-                {
-                    normMatrix[i] = new double[Height];
-                    matrixRgb[i] = new byte[Height];
-                    for (var j = 0; j < Height; j++)
-                        normMatrix[i][j] = Matrix[i][j].Magnitude / max * 255;
-                }
-
-                if (!IsSpectrum)
-                    for (var i = 0; i < Width; i++)
-                    for (var j = 0; j < Height; j++)
-                        matrixRgb[i][j] = (byte)normMatrix[i][j];
-                else
-                {
-                    double logMax = 0;
-                    for (var i = 0; i < Width; i++)
-                    for (var j = 0; j < Height; j++)
-                    {
-                        var value = Math.Sqrt(Math.Log(1 + normMatrix[i][j]));
-                        if (value > logMax)
-                            logMax = value;
-                    }
-
-                    for (var i = 0; i < Width; i++)
-                    for (var j = 0; j < Height; j++)
-                        matrixRgb[i][j] = (byte)(Math.Sqrt(Math.Log(1 + normMatrix[i][j])) / logMax * 255);
-                }
-
-                return matrixRgb;
             }
         }
     }

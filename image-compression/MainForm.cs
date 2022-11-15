@@ -24,8 +24,9 @@ namespace image_compression
             {
                 try
                 {
-                    _initImage = ImageCompression.ConvertToHalftone(new Bitmap(dialog.FileName));
-                    CallImageForm("Исходное изображение", _initImage);
+                    _initImage = new Bitmap(dialog.FileName);
+                    _imageCompression = new ImageCompression(_initImage);
+                    CallImageForm("Исходное изображение", _imageCompression.InitImage);
                 }
                 catch (Exception exception)
                 {

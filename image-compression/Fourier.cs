@@ -8,8 +8,6 @@ namespace image_compression
     /// </summary>
     public static class Fourier
     {
-        public const double DoublePi = 2 * Math.PI;
-
         /// <summary>
         /// Быстрое преобразование фурье.
         /// </summary>
@@ -22,7 +20,7 @@ namespace image_compression
             var halfSize = frame.Length >> 1;
             var fullSize = frame.Length;
 
-            var arg = direct ? -DoublePi / fullSize : DoublePi / fullSize;
+            var arg = direct ? -2 * Math.PI / fullSize : 2 * Math.PI / fullSize;
             var omegaPowBase = Complex.Exp(arg);
             // var omegaPowBase = new Complex(Math.Cos(arg), Math.Sin(arg));
             var omega = Complex.One;

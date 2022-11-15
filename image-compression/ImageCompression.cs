@@ -5,6 +5,10 @@ namespace image_compression
 {
     public class ImageCompression
     {
+        public ComplexMatrix InitMatrix;
+        public ComplexMatrix RestoredMatrix;
+        public Bitmap InitImage;
+
         private const int SizeSubmatrix = 8;
 
         private int[,] _qMatrix =
@@ -22,15 +26,13 @@ namespace image_compression
         private ComplexMatrix[,] _submatrices;
         private int N => _submatrices.GetLength(0);
         private int M => _submatrices.GetLength(1);
-
-        public int Width => InitMatrix.Width;
-        public int Height => InitMatrix.Height;
-
-        public ComplexMatrix InitMatrix;
+        private int Width => InitMatrix.Width;
+        private int Height => InitMatrix.Height;
 
         public ImageCompression(Bitmap bitmap)
         {
-            InitMatrix = new ComplexMatrix(bitmap);
+            InitImage = ConvertToHalftone(bitmap);
+            InitMatrix = new ComplexMatrix(InitImage);
             SplittingIntoSubmatrices();
             FourierTransformOfSubmatrices();
             FilteringSubmatrices();
@@ -79,7 +81,7 @@ namespace image_compression
                 }
             }
         }
-        
+
         /// <summary>
         /// Конвертация изображения в полутоновое.
         /// </summary>

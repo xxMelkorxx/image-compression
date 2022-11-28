@@ -22,38 +22,40 @@ namespace image_compression
             };
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                try
-                {
+                // try
+                // {
                     _initImage = new Bitmap(dialog.FileName);
                     _imageCompression = new ImageCompression(_initImage);
                     CallImageForm("Исходное изображение", _imageCompression.InitImage);
-                }
-                catch (Exception exception)
-                {
-                    MessageBox.Show(exception.Message, "Ошибка!");
-                }
+                // }
+                // catch (Exception exception)
+                // {
+                //     MessageBox.Show(exception.Message, "Ошибка!");
+                // }
             }
         }
         
         private void OnClickButtonCompressAndSaveImage(object sender, EventArgs e)
         {
-            _imageCompression = new ImageCompression(_initImage);
-            
-            var dialog = new SaveFileDialog
-            {
-                Filter = "Binaries(*.binary)|*.binary;|All files (*.*)|*.*"
-            };
-            if (dialog.ShowDialog() == DialogResult.OK)
-            {
-                try
-                {
-                    
-                }
-                catch (Exception exception)
-                {
-                    MessageBox.Show(exception.Message, "Ошибка!");
-                }
-            }
+            var fft = _imageCompression.FctMatrix.GetBitmap();
+            CallImageForm("fftMatrix", fft);
+            // _imageCompression = new ImageCompression(_initImage);
+            //
+            // var dialog = new SaveFileDialog
+            // {
+            //     Filter = "Binaries(*.binary)|*.binary;|All files (*.*)|*.*"
+            // };
+            // if (dialog.ShowDialog() == DialogResult.OK)
+            // {
+            //     try
+            //     {
+            //         
+            //     }
+            //     catch (Exception exception)
+            //     {
+            //         MessageBox.Show(exception.Message, "Ошибка!");
+            //     }
+            // }
         }
 
         private void OnClickButtonLoadComressedImage(object sender, EventArgs e)
@@ -88,7 +90,5 @@ namespace image_compression
             };
             imageForm.Show();
         }
-
-
     }
 }

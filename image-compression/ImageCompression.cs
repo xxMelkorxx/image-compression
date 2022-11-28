@@ -1,11 +1,14 @@
 using System;
 using System.Drawing;
+using System.IO;
+using System.Text;
 
 namespace image_compression
 {
     public class ImageCompression
     {
         public ComplexMatrix InitMatrix;
+        public ComplexMatrix FctMatrix;
         public ComplexMatrix RestoredMatrix;
         public Bitmap InitImage;
 
@@ -36,6 +39,8 @@ namespace image_compression
             SplittingIntoSubmatrices();
             FourierTransformOfSubmatrices();
             FilteringSubmatrices();
+
+            var huffmanArchiver = new HuffmanArchiver(FctMatrix);
         }
 
         /// <summary>
@@ -71,14 +76,15 @@ namespace image_compression
         /// </summary>
         private void FilteringSubmatrices()
         {
+            FctMatrix = new ComplexMatrix(Width, Height);
             for (var n = 0; n < N; n++)
             for (var m = 0; m < M; m++)
             {
+                var ni = n * SizeSubmatrix;
+                var mj = m * SizeSubmatrix;
                 for (var i = 0; i < SizeSubmatrix; i++)
                 for (var j = 0; j < SizeSubmatrix; j++)
-                {
-                    _submatrices[n, m].Matrix[i][j] = Math.Round(_submatrices[n, m].Matrix[i][j].Real / _qMatrix[i, j]);
-                }
+                    FctMatrix.Matrix[ni + i][mj + j] = _submatrices[n, m].Matrix[i][j] = Math.Round(_submatrices[n, m].Matrix[i][j].Real / _qMatrix[i, j]);
             }
         }
 

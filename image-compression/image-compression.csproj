@@ -49,6 +49,7 @@
   <ItemGroup>
     <Compile Include="ComplexMatrix.cs" />
     <Compile Include="Fourier.cs" />
+    <Compile Include="HuffmanArchiver.cs" />
     <Compile Include="ImageCompression.cs" />
     <Compile Include="ImageForm.cs">
       <SubType>Form</SubType>

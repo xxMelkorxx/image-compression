@@ -50,15 +50,15 @@ namespace image_compression
         {
             _submatrices = new ComplexMatrix[Width / SizeSubmatrix, Height / SizeSubmatrix];
             for (var n = 0; n < N; n++)
-            for (var m = 0; m < M; m++)
-            {
-                _submatrices[n, m] = new ComplexMatrix(SizeSubmatrix, SizeSubmatrix);
-                var ni = n * SizeSubmatrix;
-                var mj = m * SizeSubmatrix;
-                for (var i = 0; i < SizeSubmatrix; i++)
-                for (var j = 0; j < SizeSubmatrix; j++)
-                    _submatrices[n, m].Matrix[i][j] = InitMatrix.Matrix[ni + i][mj + j];
-            }
+                for (var m = 0; m < M; m++)
+                {
+                    _submatrices[n, m] = new ComplexMatrix(SizeSubmatrix, SizeSubmatrix);
+                    var ni = n * SizeSubmatrix;
+                    var mj = m * SizeSubmatrix;
+                    for (var i = 0; i < SizeSubmatrix; i++)
+                        for (var j = 0; j < SizeSubmatrix; j++)
+                            _submatrices[n, m].Matrix[i][j] = InitMatrix.Matrix[ni + i][mj + j];
+                }
         }
 
         /// <summary>
@@ -67,8 +67,8 @@ namespace image_compression
         private void FourierTransformOfSubmatrices()
         {
             for (var n = 0; n < N; n++)
-            for (var m = 0; m < M; m++)
-                _submatrices[n, m] = Fourier.FFT_2D(_submatrices[n, m], true);
+                for (var m = 0; m < M; m++)
+                    _submatrices[n, m] = Fourier.FFT_2D(_submatrices[n, m], true);
         }
 
         /// <summary>
@@ -78,14 +78,14 @@ namespace image_compression
         {
             FctMatrix = new ComplexMatrix(Width, Height);
             for (var n = 0; n < N; n++)
-            for (var m = 0; m < M; m++)
-            {
-                var ni = n * SizeSubmatrix;
-                var mj = m * SizeSubmatrix;
-                for (var i = 0; i < SizeSubmatrix; i++)
-                for (var j = 0; j < SizeSubmatrix; j++)
-                    FctMatrix.Matrix[ni + i][mj + j] = _submatrices[n, m].Matrix[i][j] = Math.Round(_submatrices[n, m].Matrix[i][j].Real / _qMatrix[i, j]);
-            }
+                for (var m = 0; m < M; m++)
+                {
+                    var ni = n * SizeSubmatrix;
+                    var mj = m * SizeSubmatrix;
+                    for (var i = 0; i < SizeSubmatrix; i++)
+                        for (var j = 0; j < SizeSubmatrix; j++)
+                            FctMatrix.Matrix[ni + i][mj + j] = _submatrices[n, m].Matrix[i][j] = Math.Round(_submatrices[n, m].Matrix[i][j].Real / _qMatrix[i, j]);
+                }
         }
 
         /// <summary>
@@ -100,13 +100,13 @@ namespace image_compression
 
             var newBitmap = new Bitmap(width, height);
 
-            for (var i = 0; i < bitmap.Width; i++)
-            for (var j = 0; j < bitmap.Height; j++)
-            {
-                var pixel = bitmap.GetPixel(i, j);
-                var halftoneValue = (int)(0.299 * pixel.R + 0.587 * pixel.G + 0.114 * pixel.B);
-                newBitmap.SetPixel(i, j, Color.FromArgb(halftoneValue, halftoneValue, halftoneValue));
-            }
+            for (var i = 0; i < width; i++)
+                for (var j = 0; j < height; j++)
+                {
+                    var pixel = bitmap.GetPixel(i, j);
+                    var halftoneValue = (int)(0.299 * pixel.R + 0.587 * pixel.G + 0.114 * pixel.B);
+                    newBitmap.SetPixel(i, j, Color.FromArgb(halftoneValue, halftoneValue, halftoneValue));
+                }
 
             return newBitmap;
         }

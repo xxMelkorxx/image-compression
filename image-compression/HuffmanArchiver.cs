@@ -57,20 +57,21 @@ namespace image_compression
 		/// </summary>
 		private BinaryTree<string> _huffmanTree;
 
-		private const string UncodedImageFile = "uncodedImage.txt";
-		private const string EncodedImageFile = "encodedImage.txt";
-		private const string DecodedImageFile = "decodedImage.txt";
+		private const string UncodedImageFile = "uncodedImage.binary";
+		private const string EncodedImageFile = "encodedImage.binary";
+		private const string DecodedImageFile = "decodedImage.binary";
+		private Encoding _encoding = Encoding.Default;
 
 		public HuffmanArchiver(ComplexMatrix matrix)
 		{
 			WriteToABinaryFile(matrix);
-			EncodeFile();
-			//DecodeFile();
 		}
 
 		private void WriteToABinaryFile(ComplexMatrix matrix)
 		{
-			using var writer = new BinaryWriter(File.Open(UncodedImageFile, FileMode.Create), Encoding.Default);
+			using var writer = new BinaryWriter(File.Open(UncodedImageFile, FileMode.Create), _encoding);
+			//writer.Write(matrix.Width);
+			//writer.Write(matrix.Height);
 			for (var i = 0; i < matrix.Width; i++)
 				for (var j = 0; j < matrix.Height; j++)
 					writer.Write((int)matrix.Matrix[i][j].Real);
@@ -86,20 +87,23 @@ namespace image_compression
 				throw new FileNotFoundException();
 
 			var symbolCount = 0;
+
 			// Первичная таблица: число - количество чисел.
 			var first = new Dictionary<int, int>();
+
 			// Вторичная таблица: int - вероятность числа.
 			var second = new Dictionary<int, double>();
+
 			// Чтение файла.
-			int temp;
-			using (var reader = new BinaryReader(File.Open(UncodedImageFile, FileMode.Open), Encoding.Default))
-				while ((temp = reader.Read()) > -1)
-				{
-					symbolCount++;
-					if (!first.ContainsKey(temp))
-						first.Add(temp, 1);
-					else first[temp]++;
-				}
+			using var reader = new BinaryReader(File.Open(UncodedImageFile, FileMode.Open), _encoding);
+			while (reader.PeekChar() > -1)
+			{
+				var temp = reader.ReadInt32();
+				symbolCount++;
+				if (!first.ContainsKey(temp))
+					first.Add(temp, 1);
+				else first[temp]++;
+			}
 
 			foreach (var i in first)
 				second.Add(i.Key, (double)i.Value / symbolCount);
@@ -123,20 +127,25 @@ namespace image_compression
 
 			while (binaryTree.Count > 1)
 			{
-				// Отбирает пару символов с наименьшей вероятностью.
-				var helpmass = binaryTree.OrderByDescending(pair => pair.Value).Reverse().Take(2).ToArray();
-				// Скрепляет эту пару символов, тем самым создаёт узел
-				string s1 = helpmass[0].Key, s2 = helpmass[1].Key, s3 = string.Concat(s1, s2);
-				double d1 = helpmass[0].Value, d2 = helpmass[1].Value;
-				binaryTree.Remove(s1);
-				binaryTree.Remove(s2);
-				binaryTree.Add(s3, d1 + d2);
+				// Отбирает пару ключей с наименьшей вероятностью.
+				var helpmass = binaryTree.OrderBy(pair => pair.Value).Take(2).ToArray();
+				// Скрепляет эту пару ключей, тем самым создаёт узел.
+				var leftKey = helpmass[1].Key;
+				var rightKey = helpmass[0].Key;
+				var concatKey = string.Concat(leftKey, rightKey);
 
-				nodeList.TryGetValue(s1, out var leftChild);
-				nodeList.TryGetValue(s2, out var rightChild);
+				var leftValue = helpmass[1].Value;
+				var rigthValue = helpmass[0].Value;
+
+				binaryTree.Remove(leftKey);
+				binaryTree.Remove(rightKey);
+				binaryTree.Add(concatKey, leftValue + rigthValue);
+
+				nodeList.TryGetValue(leftKey, out var leftChild);
+				nodeList.TryGetValue(rightKey, out var rightChild);
 				nodeList.Remove(leftChild.Value);
 				nodeList.Remove(rightChild.Value);
-				nodeList.Add(s3, new BinaryTreeNode<string>(s3, leftChild, rightChild));
+				nodeList.Add(concatKey, new BinaryTreeNode<string>(concatKey, leftChild, rightChild));
 			}
 
 			nodeList.TryGetValue(binaryTree.ElementAt(0).Key, out var root);
@@ -152,32 +161,27 @@ namespace image_compression
 		{
 			var codeTable = new Dictionary<int, string>();
 
-			foreach (var i in _numberTable.Keys.ToList())
+			_numberTable.Keys.ToList().ForEach(key =>
 			{
 				var code = new StringBuilder();
 				var temp = _huffmanTree.Root;
-				while (temp.Value.Length > 1)
-				{
-					List<string> codes = new List<string>();
-					if (temp.LeftChild != null)
-						for (var j = 0; j < temp.LeftChild.Value.Length / 32; j++)
-							codes.Add(temp.LeftChild.Value.Substring(j * 32, 32));
 
-					if (temp.LeftChild != null && codes.Contains(Convert.ToString(i, 2).PadLeft(32, '0')))
+				while (temp.Value.Length > 32)
+				{
+					if (temp.LeftChild.Value.Contains(Convert.ToString(key, 2).PadLeft(32, '0')))
 					{
 						code.Append("0");
-						temp ??= temp.LeftChild;
+						temp = temp.LeftChild;
 					}
-					else if (temp.RightChild != null)
+					else
 					{
 						code.Append("1");
 						temp = temp.RightChild;
 					}
-					else break;
 				}
 
-				codeTable.Add(i, code.ToString());
-			}
+				codeTable.Add(key, code.ToString());
+			});
 
 			return codeTable;
 		}
@@ -186,26 +190,26 @@ namespace image_compression
 		/// Кодирование файла.
 		/// </summary>
 		/// <param name="bufferSize"></param>
-		private void EncodeFile(int bufferSize = 4)
+		public void EncodeFile(int bufferSize = 4)
 		{
 			if (!File.Exists(UncodedImageFile))
 				throw new FileNotFoundException();
 
-			var binaryCode = new StringBuilder();
 			_numberTable = CreateProbabilityTable();
 			_huffmanTree = CreateHuffmanTree();
 			_codeTable = CreateCodeTable();
 
-			int temp;
-			using var reader = new BinaryReader(File.Open(UncodedImageFile, FileMode.Open), Encoding.Default);
-			using var writer = new BinaryWriter(File.Open(EncodedImageFile, FileMode.Create), Encoding.Default);
+			using var reader = new BinaryReader(File.Open(UncodedImageFile, FileMode.Open), _encoding);
+			using var writer = new BinaryWriter(File.Open(EncodedImageFile, FileMode.Create), _encoding);
 
 			// Сохраняем дерево.
 			var saveTree = new BinaryFormatter();
 			saveTree.Serialize(writer.BaseStream, _huffmanTree);
 
-			while ((temp = reader.Read()) > -1)
+			var binaryCode = new StringBuilder();
+			while (reader.PeekChar() > -1)
 			{
+				var temp = reader.ReadInt32();
 				_codeTable.TryGetValue(temp, out var code);
 				binaryCode.Append(code);
 				if (binaryCode.Length > bufferSize * 32)
@@ -219,8 +223,8 @@ namespace image_compression
 
 			if (binaryCode.Length != 0)
 			{
-				var bytes = StringToInts(binaryCode.ToString().PadRight(bufferSize * 32, '0'));
-				foreach (var i in bytes)
+				var ints = StringToInts(binaryCode.ToString().PadRight(bufferSize * 32, '0'));
+				foreach (var i in ints)
 					writer.Write(i);
 			}
 		}
@@ -229,8 +233,7 @@ namespace image_compression
 		/// Декодирование файла, закодированный с помощью алгоритма Хаффмана.
 		/// </summary>
 		/// <param name="readBufferSize"></param>
-		/// <param name="writeBuffersize"></param>
-		private void DecodeFile(int readBufferSize = 8, int writeBuffersize = 10)
+		public void DecodeFile(int readBufferSize = 8)
 		{
 			if (!File.Exists(EncodedImageFile))
 				throw new FileNotFoundException();
@@ -238,48 +241,35 @@ namespace image_compression
 			var decodedStr = new StringBuilder();
 			var binaryCode = new StringBuilder();
 
-			using var reader = new BinaryReader(File.Open(EncodedImageFile, FileMode.Open), Encoding.Default);
-			using var writer = new BinaryWriter(File.Open(DecodedImageFile, FileMode.Create), Encoding.Default);
+			using var reader = new BinaryReader(File.Open(EncodedImageFile, FileMode.Open), _encoding);
+			using var writer = new BinaryWriter(File.Open(DecodedImageFile, FileMode.Create), _encoding);
 
 			// Загружаем сохраненное дерево Хаффмана.
 			var saveTree = new BinaryFormatter();
 			_huffmanTree = (BinaryTree<string>)saveTree.Deserialize(reader.BaseStream);
 
-			while (reader.BaseStream.Position != reader.BaseStream.Length)
+			while (reader.PeekChar() > -1)
 			{
 				var buffer = new List<int>();
-				var currPos = reader.BaseStream.Position;
-				for (var i = currPos; i < currPos + readBufferSize; i++)
-					buffer.Add(reader.ReadInt32());
+				for (var i = 0; i < readBufferSize; i++)
+					if (reader.BaseStream.Position < reader.BaseStream.Length)
+						buffer.Add(reader.ReadInt32());
 
 				foreach (var i in buffer)
-					binaryCode.Append(Convert.ToString(i, 2));
+					binaryCode.Append(Convert.ToString(i, 2).PadLeft(32, '0'));
 
 				var temp = binaryCode.ToString();
 				while (temp.Length >= readBufferSize)
 				{
-					try
-					{
-						// Error!!!
-						decodedStr.Append(DecodeSymbol(ref temp));
-						binaryCode = new StringBuilder(temp);
-					}
-					catch (Exception)
-					{
-						break;
-					}
+					decodedStr.Append(DecodeSymbol(ref temp));
+					if (decodedStr.Length == 0) break;
+					binaryCode = new StringBuilder(temp);
 
-					if (decodedStr.Length >= writeBuffersize)
-					{
-						var writeBuffer = Encoding.Default.GetBytes(decodedStr.ToString());
-						writer.Write(writeBuffer, 0, writeBuffer.Length);
-						decodedStr.Remove(0, writeBuffersize);
-					}
+					var writeBuffer = Convert.ToInt32(decodedStr.ToString(), 2);
+					writer.Write(writeBuffer);
+					decodedStr.Remove(0, 32);
 				}
 			}
-
-			var writeBuffer2 = Encoding.Default.GetBytes(decodedStr.ToString());
-			writer.Write(writeBuffer2, 0, writeBuffer2.Length);
 		}
 
 		/// <summary>
@@ -287,16 +277,16 @@ namespace image_compression
 		/// </summary>
 		/// <param name="code"></param>
 		/// <returns></returns>
-		private char DecodeSymbol(ref string code)
+		private string DecodeSymbol(ref string code)
 		{
 			var node = _huffmanTree.Root;
 			var count = 0;
 			foreach (var i in code)
 			{
-				if (node == null || node.Value.Length == 1)
+				if (node.Value.Length == 32)
 				{
 					code = code.Remove(0, count);
-					return node.Value.ElementAt(0);
+					return node.Value;
 				}
 
 				if (i == '0')
@@ -311,7 +301,7 @@ namespace image_compression
 				}
 			}
 
-			throw new FileNotFoundException();
+			return string.Empty;
 		}
 
 		/// <summary>

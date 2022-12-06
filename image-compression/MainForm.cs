@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Drawing;
+using System.IO;
+using System.Text;
 using System.Windows.Forms;
 
 namespace image_compression
@@ -8,13 +10,15 @@ namespace image_compression
 	{
 		private Bitmap _initImage;
 		private ImageCompression _imageCompression;
+		private int _width;
+		private int _height;
 
 		public MainForm()
 		{
 			InitializeComponent();
 		}
 
-		private void OnClickButtonLoadImage(object sender, EventArgs e)
+		private void OnClickButtonCompressImage(object sender, EventArgs e)
 		{
 			var dialog = new OpenFileDialog
 			{
@@ -22,40 +26,19 @@ namespace image_compression
 			};
 			if (dialog.ShowDialog() == DialogResult.OK)
 			{
-				// try
-				// {
-				_initImage = new Bitmap(dialog.FileName);
-				_imageCompression = new ImageCompression(_initImage);
-				CallImageForm("Исходное изображение", _imageCompression.InitImage);
-				// }
-				// catch (Exception exception)
-				// {
-				//     MessageBox.Show(exception.Message, "Ошибка!");
-				// }
+				//try
+				//{
+					_initImage = new Bitmap(dialog.FileName);
+					_imageCompression = new ImageCompression(_initImage);
+					_width = _imageCompression.Width;
+					_height = _imageCompression.Height;
+					CallImageForm("Исходное изображение", _imageCompression.InitMatrix.GetBitmap());
+				//}
+				//catch (Exception exception)
+				//{
+				//	MessageBox.Show(exception.Message, "Ошибка!");
+				//}
 			}
-		}
-
-		private void OnClickButtonCompressAndSaveImage(object sender, EventArgs e)
-		{
-			var fft = _imageCompression.FctMatrix.GetBitmap();
-			CallImageForm("fftMatrix", fft);
-			// _imageCompression = new ImageCompression(_initImage);
-			//
-			// var dialog = new SaveFileDialog
-			// {
-			//     Filter = "Binaries(*.binary)|*.binary;|All files (*.*)|*.*"
-			// };
-			// if (dialog.ShowDialog() == DialogResult.OK)
-			// {
-			//     try
-			//     {
-			//         
-			//     }
-			//     catch (Exception exception)
-			//     {
-			//         MessageBox.Show(exception.Message, "Ошибка!");
-			//     }
-			// }
 		}
 
 		private void OnClickButtonLoadComressedImage(object sender, EventArgs e)
@@ -68,7 +51,9 @@ namespace image_compression
 			{
 				try
 				{
-
+					using var reader = new BinaryReader(File.OpenRead(dialog.FileName), Encoding.Default);
+					_imageCompression = new ImageCompression(reader, _width, _height);
+					CallImageForm("Исходное изображение", _imageCompression.InitMatrix.GetBitmap());
 				}
 				catch (Exception exception)
 				{

@@ -21,8 +21,7 @@ namespace image_compression
             var fullSize = frame.Length;
 
             var arg = direct ? -2 * Math.PI / fullSize : 2 * Math.PI / fullSize;
-            var omegaPowBase = Complex.Exp(arg);
-            // var omegaPowBase = new Complex(Math.Cos(arg), Math.Sin(arg));
+            var omegaPowBase = new Complex(Math.Cos(arg), 0);
             var omega = Complex.One;
             var result = new Complex[fullSize];
 
@@ -45,7 +44,7 @@ namespace image_compression
             yBottom = FFT(yBottom, direct);
             for (var i = 0; i < halfSize; i++)
             {
-                var j = i << 1; // i = 2*j;
+                var j = i << 1;
                 result[j] = yTop[i];
                 result[j + 1] = yBottom[i];
             }

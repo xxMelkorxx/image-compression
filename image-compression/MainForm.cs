@@ -26,19 +26,18 @@ namespace image_compression
 			};
 			if (dialog.ShowDialog() == DialogResult.OK)
 			{
-				//try
-				//{
+				try
+				{
 					_initImage = new Bitmap(dialog.FileName);
 					_imageCompression = new ImageCompression(_initImage);
 					_width = _imageCompression.Width;
 					_height = _imageCompression.Height;
 					CallImageForm("Исходное изображение", _imageCompression.InitMatrix.GetBitmap());
-					CallImageForm("Исходное изображение", _imageCompression.FctMatrix.GetBitmap());
-				//}
-				//catch (Exception exception)
-				//{
-				//	MessageBox.Show(exception.Message, "Ошибка!");
-				//}
+				}
+				catch (Exception exception)
+				{
+					MessageBox.Show(exception.Message, "Ошибка!");
+				}
 			}
 		}
 
@@ -50,16 +49,16 @@ namespace image_compression
 			};
 			if (dialog.ShowDialog() == DialogResult.OK)
 			{
-				//try
-				//{
+				try
+				{
 					using var reader = new BinaryReader(File.OpenRead(dialog.FileName), Encoding.Default);
 					_imageCompression = new ImageCompression(reader, _width, _height);
-					CallImageForm("Исходное изображение", _imageCompression.InitMatrix.GetBitmap());
-				//}
-				//catch (Exception exception)
-				//{
-				//	MessageBox.Show(exception.Message, "Ошибка!");
-				//}
+					CallImageForm("Разархивированное изображение", _imageCompression.InitMatrix.GetBitmap());
+				}
+				catch (Exception exception)
+				{
+					MessageBox.Show(exception.Message, "Ошибка!");
+				}
 			}
 		}
 

@@ -44,16 +44,15 @@ namespace image_compression
 			FilteringSubmatrices(true);
 
 			var huffmanArchiver = new HuffmanArchiver(FctMatrix);
+			var fff = FctMatrix;
 			huffmanArchiver.EncodeFile();
 			huffmanArchiver.DecodeFile();
 		}
 
 		public ImageCompression(BinaryReader reader, int width, int height)
 		{
-			//Width = reader.ReadInt32();
-			//Height = reader.ReadInt32();
-			Width = width;
-			Height = height;
+			Width = reader.ReadInt32();
+			Height = reader.ReadInt32();
 			InitMatrix = new ComplexMatrix(Width, Height);
 			FctMatrix = new ComplexMatrix(Width, Height, true);
 			for (var i = 0; i < Width; i++)

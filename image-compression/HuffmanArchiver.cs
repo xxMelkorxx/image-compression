@@ -60,6 +60,7 @@ namespace image_compression
 		private const string UncodedImageFile = "uncodedImage.binary";
 		private const string EncodedImageFile = "encodedImage.binary";
 		private const string DecodedImageFile = "decodedImage.binary";
+		private const string HuffmanTreeFile = "huffmanTree.binary";
 		private Encoding _encoding = Encoding.Default;
 
 		public HuffmanArchiver(ComplexMatrix matrix)
@@ -70,8 +71,8 @@ namespace image_compression
 		private void WriteToABinaryFile(ComplexMatrix matrix)
 		{
 			using var writer = new BinaryWriter(File.Open(UncodedImageFile, FileMode.Create), _encoding);
-			//writer.Write(matrix.Width);
-			//writer.Write(matrix.Height);
+			writer.Write(matrix.Width);
+			writer.Write(matrix.Height);
 			for (var i = 0; i < matrix.Width; i++)
 				for (var j = 0; j < matrix.Height; j++)
 				{
@@ -121,17 +122,19 @@ namespace image_compression
 		private BinaryTree<string> CreateHuffmanTree()
 		{
 			var binaryTree = new Dictionary<string, double>();
-			foreach (var i in _numberTable)
+			foreach (var i in _numberTable.OrderBy(p => p.Value))
 				binaryTree.Add(Convert.ToString(i.Key, 2).PadLeft(32, '0'), i.Value);
 
 			var nodeList = new Dictionary<string, BinaryTreeNode<string>>();
 			foreach (var i in binaryTree.Keys)
 				nodeList.Add(i, new BinaryTreeNode<string>(i));
 
+			
 			while (binaryTree.Count > 1)
 			{
 				// Отбирает пару ключей с наименьшей вероятностью.
-				var helpmass = binaryTree.OrderBy(pair => pair.Value).Take(2).ToArray();
+				var helpmass = binaryTree.Take(2).ToArray();
+
 				// Скрепляет эту пару ключей, тем самым создаёт узел.
 				var leftKey = helpmass[1].Key;
 				var rightKey = helpmass[0].Key;
@@ -204,10 +207,11 @@ namespace image_compression
 
 			using var reader = new BinaryReader(File.Open(UncodedImageFile, FileMode.Open), _encoding);
 			using var writer = new BinaryWriter(File.Open(EncodedImageFile, FileMode.Create), _encoding);
+			using var writerHuffman = new BinaryWriter(File.Open(HuffmanTreeFile, FileMode.Create), _encoding);
 
 			// Сохраняем дерево.
 			var saveTree = new BinaryFormatter();
-			saveTree.Serialize(writer.BaseStream, _huffmanTree);
+			saveTree.Serialize(writerHuffman.BaseStream, _huffmanTree);
 
 			var binaryCode = new StringBuilder();
 			while (reader.PeekChar() > -1)
@@ -236,7 +240,7 @@ namespace image_compression
 		/// Декодирование файла, закодированный с помощью алгоритма Хаффмана.
 		/// </summary>
 		/// <param name="readBufferSize"></param>
-		public void DecodeFile(int readBufferSize = 8)
+		public void DecodeFile(int readBufferSize = 4)
 		{
 			if (!File.Exists(EncodedImageFile))
 				throw new FileNotFoundException();
@@ -246,10 +250,11 @@ namespace image_compression
 
 			using var reader = new BinaryReader(File.Open(EncodedImageFile, FileMode.Open), _encoding);
 			using var writer = new BinaryWriter(File.Open(DecodedImageFile, FileMode.Create), _encoding);
+			using var readerHuffman = new BinaryReader(File.Open(HuffmanTreeFile, FileMode.Open), _encoding);
 
 			// Загружаем сохраненное дерево Хаффмана.
 			var saveTree = new BinaryFormatter();
-			_huffmanTree = (BinaryTree<string>)saveTree.Deserialize(reader.BaseStream);
+			_huffmanTree = (BinaryTree<string>)saveTree.Deserialize(readerHuffman.BaseStream);
 
 			while (reader.PeekChar() > -1)
 			{
@@ -291,7 +296,6 @@ namespace image_compression
 					code = code.Remove(0, count);
 					return node.Value;
 				}
-
 				if (i == '0')
 				{
 					node = node.LeftChild;

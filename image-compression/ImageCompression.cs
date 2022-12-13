@@ -1,13 +1,13 @@
 using System;
 using System.Drawing;
 using System.IO;
+using System.Numerics;
 
 namespace image_compression
 {
 	public class ImageCompression
 	{
-		private int[,] _qMatrix =
-{
+		private int[,] _qMatrix = {
 			{ 16, 11, 10, 16, 24, 40, 51, 61 },
 			{ 12, 12, 14, 19, 26, 58, 60, 55 },
 			{ 14, 13, 16, 24, 40, 57, 69, 56 },
@@ -58,7 +58,7 @@ namespace image_compression
 			FctMatrix = new ComplexMatrix(Width, Height, true);
 			for (var i = 0; i < Width; i++)
 				for (var j = 0; j < Height; j++)
-					FctMatrix.Matrix[i][j] = reader.ReadInt32();
+					FctMatrix.Matrix[i][j] = new Complex(reader.ReadInt32(), reader.ReadInt32());
 
 			SplittingIntoSubmatrices(false);
 			FilteringSubmatrices(false);
@@ -85,8 +85,10 @@ namespace image_compression
 					var mj = m * SizeSubmatrix;
 					for (var i = 0; i < SizeSubmatrix; i++)
 						for (var j = 0; j < SizeSubmatrix; j++)
-							if (direct) _submatrices[n, m].Matrix[i][j] = InitMatrix.Matrix[ni + i][mj + j];
-							else _submatrices[n, m].Matrix[i][j] = FctMatrix.Matrix[ni + i][mj + j];
+							if (direct) 
+								_submatrices[n, m].Matrix[i][j] = InitMatrix.Matrix[ni + i][mj + j];
+							else 
+								_submatrices[n, m].Matrix[i][j] = FctMatrix.Matrix[ni + i][mj + j];
 				}
 		}
 
@@ -113,8 +115,17 @@ namespace image_compression
 					for (var i = 0; i < SizeSubmatrix; i++)
 						for (var j = 0; j < SizeSubmatrix; j++)
 						{
-							if (direct) FctMatrix.Matrix[ni + i][mj + j] = _submatrices[n, m].Matrix[i][j] = Math.Round(_submatrices[n, m].Matrix[i][j].Real / _qMatrix[i, j]);
-							else _submatrices[n, m].Matrix[i][j] = _submatrices[n, m].Matrix[i][j].Real * _qMatrix[i, j];
+							if (direct)
+							{
+								_submatrices[n, m].Matrix[i][j] = new Complex(
+									Math.Round(_submatrices[n, m].Matrix[i][j].Real / _qMatrix[i, j]),
+									Math.Round(_submatrices[n, m].Matrix[i][j].Imaginary / _qMatrix[i, j]));
+								FctMatrix.Matrix[ni + i][mj + j] = _submatrices[n, m].Matrix[i][j];
+							}
+							else 
+								_submatrices[n, m].Matrix[i][j] = new Complex(
+									_submatrices[n, m].Matrix[i][j].Real * _qMatrix[i, j],
+									_submatrices[n, m].Matrix[i][j].Imaginary * _qMatrix[i, j]);
 						}
 				}
 		}

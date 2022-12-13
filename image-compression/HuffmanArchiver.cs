@@ -74,7 +74,10 @@ namespace image_compression
 			//writer.Write(matrix.Height);
 			for (var i = 0; i < matrix.Width; i++)
 				for (var j = 0; j < matrix.Height; j++)
+				{
 					writer.Write((int)matrix.Matrix[i][j].Real);
+					writer.Write((int)matrix.Matrix[i][j].Imaginary);
+				}
 		}
 
 		/// <summary>

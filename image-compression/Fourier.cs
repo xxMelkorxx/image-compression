@@ -21,7 +21,8 @@ namespace image_compression
             var fullSize = frame.Length;
 
             var arg = direct ? -2 * Math.PI / fullSize : 2 * Math.PI / fullSize;
-            var omegaPowBase = new Complex(Math.Cos(arg), 0);
+            //var omegaPowBase = new Complex(Math.Cos(arg), 0);
+            var omegaPowBase = new Complex(Math.Cos(arg), Math.Sin(arg));
             var omega = Complex.One;
             var result = new Complex[fullSize];
 

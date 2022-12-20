@@ -10,6 +10,8 @@ namespace image_compression
     {
         private Bitmap _initImage;
         private ImageCompression _imageCompression;
+        private ComplexMatrix _initMatrix;
+        private ComplexMatrix _restoredMatrix;
 
         public MainForm()
         {
@@ -28,7 +30,10 @@ namespace image_compression
                 {
                     _initImage = new Bitmap(dialog.FileName);
                     _imageCompression = new ImageCompression(_initImage);
+                    _initMatrix = _imageCompression.InitMatrix;
                     CallImageForm("Исходное изображение", _imageCompression.InitMatrix.GetBitmap());
+                    CallImageForm("Результат квантования изображения", _imageCompression.FctMatrix.GetBitmap());
+                    tB_sko.Text = "0";
                 }
                 catch (Exception exception)
                 {
@@ -47,9 +52,11 @@ namespace image_compression
             {
                 try
                 {
-                using var reader = new BinaryReader(File.OpenRead(dialog.FileName), Encoding.Default);
-                _imageCompression = new ImageCompression(reader);
-                CallImageForm("Разархивированное изображение", _imageCompression.InitMatrix.GetBitmap());
+                    using var reader = new BinaryReader(File.OpenRead(dialog.FileName), Encoding.Default);
+                    _imageCompression = new ImageCompression(reader);
+                    _restoredMatrix = _imageCompression.InitMatrix;
+                    CallImageForm("Разархивированное изображение", _imageCompression.InitMatrix.GetBitmap());
+                    tB_sko.Text = ImageCompression.GetStandardDeviation(_initMatrix, _restoredMatrix).ToString("F5");
                 }
                 catch (Exception exception)
                 {

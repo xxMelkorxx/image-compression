@@ -29,8 +29,11 @@
         /// </summary>
         private void InitializeComponent()
         {
+			System.Windows.Forms.Label label_sko;
 			this.button_compressImage = new System.Windows.Forms.Button();
 			this.button_loadComressedImage = new System.Windows.Forms.Button();
+			this.tB_sko = new System.Windows.Forms.TextBox();
+			label_sko = new System.Windows.Forms.Label();
 			this.SuspendLayout();
 			// 
 			// button_compressImage
@@ -53,11 +56,32 @@
 			this.button_loadComressedImage.UseVisualStyleBackColor = true;
 			this.button_loadComressedImage.Click += new System.EventHandler(this.OnClickButtonLoadComressedImage);
 			// 
+			// tB_sko
+			// 
+			this.tB_sko.Location = new System.Drawing.Point(218, 88);
+			this.tB_sko.Name = "tB_sko";
+			this.tB_sko.ReadOnly = true;
+			this.tB_sko.Size = new System.Drawing.Size(199, 25);
+			this.tB_sko.TabIndex = 5;
+			this.tB_sko.Text = "0";
+			this.tB_sko.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
+			// 
+			// label_sko
+			// 
+			label_sko.Location = new System.Drawing.Point(12, 88);
+			label_sko.Name = "label_sko";
+			label_sko.Size = new System.Drawing.Size(200, 25);
+			label_sko.TabIndex = 6;
+			label_sko.Text = "СКО:";
+			label_sko.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
+			// 
 			// MainForm
 			// 
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
 			this.AutoSize = true;
-			this.ClientSize = new System.Drawing.Size(429, 89);
+			this.ClientSize = new System.Drawing.Size(429, 122);
+			this.Controls.Add(label_sko);
+			this.Controls.Add(this.tB_sko);
 			this.Controls.Add(this.button_loadComressedImage);
 			this.Controls.Add(this.button_compressImage);
 			this.Font = new System.Drawing.Font("JetBrains Mono", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
@@ -66,11 +90,13 @@
 			this.Name = "MainForm";
 			this.Text = "ИСИТ ННГУ | Сжатие изображения";
 			this.ResumeLayout(false);
+			this.PerformLayout();
 
         }
 
         #endregion
 		private System.Windows.Forms.Button button_compressImage;
 		private System.Windows.Forms.Button button_loadComressedImage;
+		private System.Windows.Forms.TextBox tB_sko;
 	}
 }

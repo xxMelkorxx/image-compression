@@ -82,12 +82,60 @@ namespace image_compression
             return result;
         }
 
-        /// <summary>
-        /// Транспонирование матрицы.
-        /// </summary>
-        /// <param name="init">Исходная матрица</param>
-        /// <returns>Транспонированная матрица</returns>
-        public static ComplexMatrix Transform(ComplexMatrix init)
+		/// <summary>
+		/// Дискретно-косинусное преобразование для матрицы размером 8x8.
+		/// </summary>
+		/// <param name="matrix">Матрица 8х8</param>
+		/// <returns></returns>
+		public static ComplexMatrix DCT(ComplexMatrix idct)
+        {
+			const double pi = Math.PI;
+			static double C(int x) => x == 0 ? 1 / Math.Sqrt(2) : 1;
+
+			var dct = new ComplexMatrix(8, 8);
+			for (int i = 0; i < 8; i++)
+                for (int j = 0; j < 8; j++)
+                {
+                    for (int x = 0; x < 8; x++)
+						for (int y = 0; y < 8; y++)
+							dct.Matrix[i][j] += idct.Matrix[x][y] * Math.Cos((2 * x + 1) * (i * pi) / 16d) * Math.Cos((2 * y + 1) * (j * pi) / 16d);
+
+					dct.Matrix[i][j] *= 0.25 * C(i) * C(j);
+				}
+
+            return dct;
+        }
+
+		/// <summary>
+		/// Дискретно-косинусное преобразование для матрицы размером 8x8.
+		/// </summary>
+		/// <param name="dct">Матрица 8х8</param>
+		/// <returns></returns>
+		public static ComplexMatrix IDCT(ComplexMatrix dct)
+		{
+			const double pi = Math.PI;
+			static double C(int x) => x == 0 ? 1 / Math.Sqrt(2) : 1;
+
+			var idct = new ComplexMatrix(8, 8);
+			for (int x = 0; x < 8; x++)
+				for (int y = 0; y < 8; y++)
+				{
+					for (int i = 0; i < 8; i++)
+						for (int j = 0; j < 8; j++)
+							idct.Matrix[x][y] += C(i) * C(j) * dct.Matrix[i][j] * Math.Cos((2 * x + 1) * (i * pi) / 16d) * Math.Cos((2 * y + 1) * (j * pi) / 16d);
+
+					idct.Matrix[x][y] *= 0.25;
+				}
+
+			return idct;
+		}
+
+		/// <summary>
+		/// Транспонирование матрицы.
+		/// </summary>
+		/// <param name="init">Исходная матрица</param>
+		/// <returns>Транспонированная матрица</returns>
+		public static ComplexMatrix Transform(ComplexMatrix init)
         {
             var width = init.Width;
             var height = init.Height;

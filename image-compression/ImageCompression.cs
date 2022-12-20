@@ -9,17 +9,16 @@ namespace image_compression
     {
         private int[,] _qMatrix =
         {
-            { 10, 20, 50, 100, 100, 50, 20, 10 },
-            { 20, 50, 100, 200, 200, 100, 50, 20 },
-            { 50, 100, 200, 200, 200, 200, 100, 50 },
-            { 100, 200, 200, 200, 200, 200, 200, 100 },
-            { 100, 200, 200, 200, 200, 109, 200, 100 },
-            { 50, 100, 200, 200, 200, 200, 100, 50 },
-            { 20, 50, 100, 200, 200, 100, 50, 20 },
-            { 10, 20, 50, 100, 100, 50, 20, 10 }
+            { 16, 11, 10, 16, 24, 40, 51, 61 },
+            { 12, 12, 14, 19, 26, 58, 60, 55 },
+            { 14, 13, 16, 24, 40, 57, 69, 56 },
+            { 14, 17, 22, 29, 51, 87, 80, 62 },
+            { 18, 22, 37, 56, 68, 109, 103, 77 },
+            { 24, 35, 55, 64, 81, 104, 113, 92 },
+            { 49, 64, 78, 87, 103, 121, 120, 101 },
+            { 72, 92, 95, 98, 112, 100, 103, 99 }
         };
 
-        public Bitmap InitImage;
         public ComplexMatrix InitMatrix;
         public ComplexMatrix FctMatrix;
         public ComplexMatrix RestoredMatrix;
@@ -34,11 +33,11 @@ namespace image_compression
 
         public ImageCompression(Bitmap bitmap)
         {
-            InitImage = ConvertToHalftone(bitmap);
-            Width = InitImage.Width;
-            Height = InitImage.Height;
-            InitMatrix = new ComplexMatrix(InitImage);
-            FctMatrix = new ComplexMatrix(Width, Height);
+            var initImage = ConvertToHalftone(bitmap);
+            Width = initImage.Width;
+            Height = initImage.Height;
+            InitMatrix = new ComplexMatrix(initImage);
+            FctMatrix = new ComplexMatrix(Width, Height, true);
 
             SplittingIntoSubmatrices(true);
             FourierTransformOfSubmatrices(true);
@@ -94,7 +93,10 @@ namespace image_compression
         {
             for (var n = 0; n < N; n++)
             for (var m = 0; m < M; m++)
-                _submatrices[n, m] = Fourier.FFT_2D(_submatrices[n, m], direct);
+                if (direct)
+                    _submatrices[n, m] = Fourier.DCT(_submatrices[n, m]);
+                else
+                    _submatrices[n, m] = Fourier.IDCT(_submatrices[n, m]);
         }
 
         /// <summary>
@@ -109,19 +111,10 @@ namespace image_compression
                 var mj = m * SizeSubmatrix;
                 for (var i = 0; i < SizeSubmatrix; i++)
                 for (var j = 0; j < SizeSubmatrix; j++)
-                {
                     if (direct)
-                    {
-                        _submatrices[n, m].Matrix[i][j] = new Complex(
-                            Math.Round(_submatrices[n, m].Matrix[i][j].Real / _qMatrix[i, j]),
-                            Math.Round(_submatrices[n, m].Matrix[i][j].Imaginary / _qMatrix[i, j]));
-                        FctMatrix.Matrix[ni + i][mj + j] = _submatrices[n, m].Matrix[i][j];
-                    }
+                        FctMatrix.Matrix[ni + i][mj + j] = _submatrices[n, m].Matrix[i][j] = new Complex(Math.Round(_submatrices[n, m].Matrix[i][j].Real / _qMatrix[i, j]), 0);
                     else
-                        _submatrices[n, m].Matrix[i][j] = new Complex(
-                            _submatrices[n, m].Matrix[i][j].Real * _qMatrix[i, j],
-                            _submatrices[n, m].Matrix[i][j].Imaginary * _qMatrix[i, j]);
-                }
+                        _submatrices[n, m].Matrix[i][j] *= _qMatrix[i, j];
             }
         }
 
@@ -146,6 +139,31 @@ namespace image_compression
             }
 
             return newBitmap;
+        }
+
+        /// <summary>
+        /// Подсчёт среднеквадратичного отклонения между двумя матрицами.
+        /// </summary>
+        /// <param name="m1">Первая матрица.</param>
+        /// <param name="m2">Вторая матрица.</param>
+        /// <returns></returns>
+        public static double GetStandardDeviation(ComplexMatrix m1, ComplexMatrix m2)
+        {
+            if (m1.Width != m2.Width ||
+                m1.Height != m2.Height)
+                return 0;
+
+            var w = m1.Width;
+            var h = m1.Height;
+            double sumUp = 0, sumDown = 0;
+            for (var i = 0; i < w; i++)
+            for (var j = 0; j < h; j++)
+            {
+                sumUp += (m1.Matrix[i][j].Magnitude - m2.Matrix[i][j].Magnitude) * (m1.Matrix[i][j].Magnitude - m2.Matrix[i][j].Magnitude);
+                sumDown += m1.Matrix[i][j].Magnitude * m2.Matrix[i][j].Magnitude;
+            }
+
+            return sumUp / sumDown;
         }
     }
 }

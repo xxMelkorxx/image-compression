@@ -21,7 +21,6 @@ namespace image_compression
 
         public ComplexMatrix InitMatrix;
         public ComplexMatrix FctMatrix;
-        public ComplexMatrix RestoredMatrix;
 
         private const int SizeSubmatrix = 8;
         private ComplexMatrix[,] _submatrices;

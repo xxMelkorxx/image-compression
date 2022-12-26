@@ -85,7 +85,7 @@ namespace image_compression
 		/// <summary>
 		/// Дискретно-косинусное преобразование для матрицы размером 8x8.
 		/// </summary>
-		/// <param name="matrix">Матрица 8х8</param>
+		/// <param name="idct">Матрица 8х8</param>
 		/// <returns></returns>
 		public static ComplexMatrix DCT(ComplexMatrix idct)
         {
@@ -93,14 +93,14 @@ namespace image_compression
 			static double C(int x) => x == 0 ? 1 / Math.Sqrt(2) : 1;
 
 			var dct = new ComplexMatrix(8, 8);
-			for (int i = 0; i < 8; i++)
-                for (int j = 0; j < 8; j++)
+			for (var i = 0; i < 8; i++)
+                for (var j = 0; j < 8; j++)
                 {
-                    for (int x = 0; x < 8; x++)
-						for (int y = 0; y < 8; y++)
+                    for (var x = 0; x < 8; x++)
+						for (var y = 0; y < 8; y++)
 							dct.Matrix[i][j] += idct.Matrix[x][y] * Math.Cos((2 * x + 1) * (i * pi) / 16d) * Math.Cos((2 * y + 1) * (j * pi) / 16d);
 
-					dct.Matrix[i][j] *= 0.25 * C(i) * C(j);
+                    dct.Matrix[i][j] *= 0.25 * C(i) * C(j);
 				}
 
             return dct;
@@ -117,11 +117,11 @@ namespace image_compression
 			static double C(int x) => x == 0 ? 1 / Math.Sqrt(2) : 1;
 
 			var idct = new ComplexMatrix(8, 8);
-			for (int x = 0; x < 8; x++)
-				for (int y = 0; y < 8; y++)
+			for (var x = 0; x < 8; x++)
+				for (var y = 0; y < 8; y++)
 				{
-					for (int i = 0; i < 8; i++)
-						for (int j = 0; j < 8; j++)
+					for (var i = 0; i < 8; i++)
+						for (var j = 0; j < 8; j++)
 							idct.Matrix[x][y] += C(i) * C(j) * dct.Matrix[i][j] * Math.Cos((2 * x + 1) * (i * pi) / 16d) * Math.Cos((2 * y + 1) * (j * pi) / 16d);
 
 					idct.Matrix[x][y] *= 0.25;
